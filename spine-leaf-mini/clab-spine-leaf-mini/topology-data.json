@@ -1,0 +1,474 @@
+{
+  "name": "spine-leaf-mini",
+  "type": "clab",
+  "clab": {
+    "config": {
+      "prefix": "clab",
+      "mgmt": {
+        "network": "clab",
+        "bridge": "br-775c33c78b84",
+        "ipv4-subnet": "172.20.20.0/24",
+        "ipv4-gw": "172.20.20.1",
+        "ipv6-subnet": "2001:172:20:20::/64",
+        "ipv6-gw": "2001:172:20:20::1",
+        "mtu": 1500,
+        "external-access": true
+      }
+    }
+  },
+  "nodes": {
+    "db01": {
+      "index": "0",
+      "shortname": "db01",
+      "longname": "clab-spine-leaf-mini-db01",
+      "fqdn": "db01.spine-leaf-mini.io",
+      "group": "",
+      "labdir": "/home/tonghung/network_automation/spine-leaf-mini/clab-spine-leaf-mini/db01",
+      "kind": "linux",
+      "image": "ubuntu:22.04",
+      "mgmt-net": "",
+      "mgmt-intf": "",
+      "mgmt-ipv4-address": "172.20.20.6",
+      "mgmt-ipv4-prefix-length": 24,
+      "mgmt-ipv6-address": "2001:172:20:20::6",
+      "mgmt-ipv6-prefix-length": 64,
+      "mac-address": "",
+      "labels": {
+        "clab-mgmt-net-bridge": "br-775c33c78b84",
+        "clab-node-group": "",
+        "clab-node-kind": "linux",
+        "clab-node-lab-dir": "/home/tonghung/network_automation/spine-leaf-mini/clab-spine-leaf-mini/db01",
+        "clab-node-name": "db01",
+        "clab-node-type": "",
+        "clab-topo-file": "/home/tonghung/network_automation/spine-leaf-mini/spine-leaf-fabric-mini.clab.yml",
+        "containerlab": "spine-leaf-mini"
+      },
+      "port-bindings": [
+      ]
+    },
+    "edge": {
+      "index": "1",
+      "shortname": "edge",
+      "longname": "clab-spine-leaf-mini-edge",
+      "fqdn": "edge.spine-leaf-mini.io",
+      "group": "",
+      "labdir": "/home/tonghung/network_automation/spine-leaf-mini/clab-spine-leaf-mini/edge",
+      "kind": "linux",
+      "image": "ghcr.io/srl-labs/network-multitool",
+      "mgmt-net": "",
+      "mgmt-intf": "",
+      "mgmt-ipv4-address": "172.20.20.4",
+      "mgmt-ipv4-prefix-length": 24,
+      "mgmt-ipv6-address": "2001:172:20:20::4",
+      "mgmt-ipv6-prefix-length": 64,
+      "mac-address": "",
+      "labels": {
+        "clab-mgmt-net-bridge": "br-775c33c78b84",
+        "clab-node-group": "",
+        "clab-node-kind": "linux",
+        "clab-node-lab-dir": "/home/tonghung/network_automation/spine-leaf-mini/clab-spine-leaf-mini/edge",
+        "clab-node-name": "edge",
+        "clab-node-type": "",
+        "clab-topo-file": "/home/tonghung/network_automation/spine-leaf-mini/spine-leaf-fabric-mini.clab.yml",
+        "containerlab": "spine-leaf-mini"
+      },
+      "port-bindings": [
+        {
+          "host-ip": "",
+          "host-port": 0,
+          "port": 11443,
+          "protocol": "tcp"
+        },
+        {
+          "host-ip": "",
+          "host-port": 0,
+          "port": 1180,
+          "protocol": "tcp"
+        },
+        {
+          "host-ip": "",
+          "host-port": 0,
+          "port": 22,
+          "protocol": "tcp"
+        },
+        {
+          "host-ip": "",
+          "host-port": 0,
+          "port": 443,
+          "protocol": "tcp"
+        },
+        {
+          "host-ip": "",
+          "host-port": 0,
+          "port": 80,
+          "protocol": "tcp"
+        },
+        {
+          "host-ip": "",
+          "host-port": 0,
+          "port": 8080,
+          "protocol": "tcp"
+        }
+      ]
+    },
+    "leaf1": {
+      "index": "2",
+      "shortname": "leaf1",
+      "longname": "clab-spine-leaf-mini-leaf1",
+      "fqdn": "leaf1.spine-leaf-mini.io",
+      "group": "",
+      "labdir": "/home/tonghung/network_automation/spine-leaf-mini/clab-spine-leaf-mini/leaf1",
+      "kind": "arista_ceos",
+      "image": "ceos:4.36.1F",
+      "mgmt-net": "",
+      "mgmt-intf": "Management0",
+      "mgmt-ipv4-address": "172.20.20.10",
+      "mgmt-ipv4-prefix-length": 24,
+      "mgmt-ipv6-address": "2001:172:20:20::a",
+      "mgmt-ipv6-prefix-length": 64,
+      "mac-address": "00:1c:73:07:49:f8",
+      "labels": {
+        "clab-mgmt-net-bridge": "br-775c33c78b84",
+        "clab-node-group": "",
+        "clab-node-kind": "arista_ceos",
+        "clab-node-lab-dir": "/home/tonghung/network_automation/spine-leaf-mini/clab-spine-leaf-mini/leaf1",
+        "clab-node-name": "leaf1",
+        "clab-node-type": "",
+        "clab-topo-file": "/home/tonghung/network_automation/spine-leaf-mini/spine-leaf-fabric-mini.clab.yml",
+        "containerlab": "spine-leaf-mini"
+      },
+      "port-bindings": [
+      ]
+    },
+    "leaf2": {
+      "index": "3",
+      "shortname": "leaf2",
+      "longname": "clab-spine-leaf-mini-leaf2",
+      "fqdn": "leaf2.spine-leaf-mini.io",
+      "group": "",
+      "labdir": "/home/tonghung/network_automation/spine-leaf-mini/clab-spine-leaf-mini/leaf2",
+      "kind": "arista_ceos",
+      "image": "ceos:4.36.1F",
+      "mgmt-net": "",
+      "mgmt-intf": "Management0",
+      "mgmt-ipv4-address": "172.20.20.3",
+      "mgmt-ipv4-prefix-length": 24,
+      "mgmt-ipv6-address": "2001:172:20:20::3",
+      "mgmt-ipv6-prefix-length": 64,
+      "mac-address": "00:1c:73:ed:6e:69",
+      "labels": {
+        "clab-mgmt-net-bridge": "br-775c33c78b84",
+        "clab-node-group": "",
+        "clab-node-kind": "arista_ceos",
+        "clab-node-lab-dir": "/home/tonghung/network_automation/spine-leaf-mini/clab-spine-leaf-mini/leaf2",
+        "clab-node-name": "leaf2",
+        "clab-node-type": "",
+        "clab-topo-file": "/home/tonghung/network_automation/spine-leaf-mini/spine-leaf-fabric-mini.clab.yml",
+        "containerlab": "spine-leaf-mini"
+      },
+      "port-bindings": [
+      ]
+    },
+    "leaf3": {
+      "index": "4",
+      "shortname": "leaf3",
+      "longname": "clab-spine-leaf-mini-leaf3",
+      "fqdn": "leaf3.spine-leaf-mini.io",
+      "group": "",
+      "labdir": "/home/tonghung/network_automation/spine-leaf-mini/clab-spine-leaf-mini/leaf3",
+      "kind": "arista_ceos",
+      "image": "ceos:4.36.1F",
+      "mgmt-net": "",
+      "mgmt-intf": "Management0",
+      "mgmt-ipv4-address": "172.20.20.8",
+      "mgmt-ipv4-prefix-length": 24,
+      "mgmt-ipv6-address": "2001:172:20:20::8",
+      "mgmt-ipv6-prefix-length": 64,
+      "mac-address": "00:1c:73:64:fc:c1",
+      "labels": {
+        "clab-mgmt-net-bridge": "br-775c33c78b84",
+        "clab-node-group": "",
+        "clab-node-kind": "arista_ceos",
+        "clab-node-lab-dir": "/home/tonghung/network_automation/spine-leaf-mini/clab-spine-leaf-mini/leaf3",
+        "clab-node-name": "leaf3",
+        "clab-node-type": "",
+        "clab-topo-file": "/home/tonghung/network_automation/spine-leaf-mini/spine-leaf-fabric-mini.clab.yml",
+        "containerlab": "spine-leaf-mini"
+      },
+      "port-bindings": [
+      ]
+    },
+    "leaf4": {
+      "index": "5",
+      "shortname": "leaf4",
+      "longname": "clab-spine-leaf-mini-leaf4",
+      "fqdn": "leaf4.spine-leaf-mini.io",
+      "group": "",
+      "labdir": "/home/tonghung/network_automation/spine-leaf-mini/clab-spine-leaf-mini/leaf4",
+      "kind": "arista_ceos",
+      "image": "ceos:4.36.1F",
+      "mgmt-net": "",
+      "mgmt-intf": "Management0",
+      "mgmt-ipv4-address": "172.20.20.7",
+      "mgmt-ipv4-prefix-length": 24,
+      "mgmt-ipv6-address": "2001:172:20:20::7",
+      "mgmt-ipv6-prefix-length": 64,
+      "mac-address": "00:1c:73:08:28:81",
+      "labels": {
+        "clab-mgmt-net-bridge": "br-775c33c78b84",
+        "clab-node-group": "",
+        "clab-node-kind": "arista_ceos",
+        "clab-node-lab-dir": "/home/tonghung/network_automation/spine-leaf-mini/clab-spine-leaf-mini/leaf4",
+        "clab-node-name": "leaf4",
+        "clab-node-type": "",
+        "clab-topo-file": "/home/tonghung/network_automation/spine-leaf-mini/spine-leaf-fabric-mini.clab.yml",
+        "containerlab": "spine-leaf-mini"
+      },
+      "port-bindings": [
+      ]
+    },
+    "spine1": {
+      "index": "6",
+      "shortname": "spine1",
+      "longname": "clab-spine-leaf-mini-spine1",
+      "fqdn": "spine1.spine-leaf-mini.io",
+      "group": "",
+      "labdir": "/home/tonghung/network_automation/spine-leaf-mini/clab-spine-leaf-mini/spine1",
+      "kind": "arista_ceos",
+      "image": "ceos:4.36.1F",
+      "mgmt-net": "",
+      "mgmt-intf": "Management0",
+      "mgmt-ipv4-address": "172.20.20.5",
+      "mgmt-ipv4-prefix-length": 24,
+      "mgmt-ipv6-address": "2001:172:20:20::5",
+      "mgmt-ipv6-prefix-length": 64,
+      "mac-address": "00:1c:73:86:da:e1",
+      "labels": {
+        "clab-mgmt-net-bridge": "br-775c33c78b84",
+        "clab-node-group": "",
+        "clab-node-kind": "arista_ceos",
+        "clab-node-lab-dir": "/home/tonghung/network_automation/spine-leaf-mini/clab-spine-leaf-mini/spine1",
+        "clab-node-name": "spine1",
+        "clab-node-type": "",
+        "clab-topo-file": "/home/tonghung/network_automation/spine-leaf-mini/spine-leaf-fabric-mini.clab.yml",
+        "containerlab": "spine-leaf-mini"
+      },
+      "port-bindings": [
+      ]
+    },
+    "spine2": {
+      "index": "7",
+      "shortname": "spine2",
+      "longname": "clab-spine-leaf-mini-spine2",
+      "fqdn": "spine2.spine-leaf-mini.io",
+      "group": "",
+      "labdir": "/home/tonghung/network_automation/spine-leaf-mini/clab-spine-leaf-mini/spine2",
+      "kind": "arista_ceos",
+      "image": "ceos:4.36.1F",
+      "mgmt-net": "",
+      "mgmt-intf": "Management0",
+      "mgmt-ipv4-address": "172.20.20.9",
+      "mgmt-ipv4-prefix-length": 24,
+      "mgmt-ipv6-address": "2001:172:20:20::9",
+      "mgmt-ipv6-prefix-length": 64,
+      "mac-address": "00:1c:73:54:58:c9",
+      "labels": {
+        "clab-mgmt-net-bridge": "br-775c33c78b84",
+        "clab-node-group": "",
+        "clab-node-kind": "arista_ceos",
+        "clab-node-lab-dir": "/home/tonghung/network_automation/spine-leaf-mini/clab-spine-leaf-mini/spine2",
+        "clab-node-name": "spine2",
+        "clab-node-type": "",
+        "clab-topo-file": "/home/tonghung/network_automation/spine-leaf-mini/spine-leaf-fabric-mini.clab.yml",
+        "containerlab": "spine-leaf-mini"
+      },
+      "port-bindings": [
+      ]
+    },
+    "web01": {
+      "index": "8",
+      "shortname": "web01",
+      "longname": "clab-spine-leaf-mini-web01",
+      "fqdn": "web01.spine-leaf-mini.io",
+      "group": "",
+      "labdir": "/home/tonghung/network_automation/spine-leaf-mini/clab-spine-leaf-mini/web01",
+      "kind": "linux",
+      "image": "ubuntu:22.04",
+      "mgmt-net": "",
+      "mgmt-intf": "",
+      "mgmt-ipv4-address": "172.20.20.2",
+      "mgmt-ipv4-prefix-length": 24,
+      "mgmt-ipv6-address": "2001:172:20:20::2",
+      "mgmt-ipv6-prefix-length": 64,
+      "mac-address": "",
+      "labels": {
+        "clab-mgmt-net-bridge": "br-775c33c78b84",
+        "clab-node-group": "",
+        "clab-node-kind": "linux",
+        "clab-node-lab-dir": "/home/tonghung/network_automation/spine-leaf-mini/clab-spine-leaf-mini/web01",
+        "clab-node-name": "web01",
+        "clab-node-type": "",
+        "clab-topo-file": "/home/tonghung/network_automation/spine-leaf-mini/spine-leaf-fabric-mini.clab.yml",
+        "containerlab": "spine-leaf-mini"
+      },
+      "port-bindings": [
+      ]
+    }
+  },
+  "links": [
+    {
+      "a": {
+        "node": "spine1",
+        "interface": "eth1",
+        "mac": "aa:c1:ab:fd:e0:d6",
+        "peer": "z"
+      },
+      "z": {
+        "node": "leaf1",
+        "interface": "eth1",
+        "mac": "aa:c1:ab:a4:cf:f3",
+        "peer": "a"
+      }
+    },
+    {
+      "a": {
+        "node": "spine1",
+        "interface": "eth2",
+        "mac": "aa:c1:ab:13:58:73",
+        "peer": "z"
+      },
+      "z": {
+        "node": "leaf2",
+        "interface": "eth1",
+        "mac": "aa:c1:ab:d7:eb:e8",
+        "peer": "a"
+      }
+    },
+    {
+      "a": {
+        "node": "spine1",
+        "interface": "eth3",
+        "mac": "aa:c1:ab:00:d3:55",
+        "peer": "z"
+      },
+      "z": {
+        "node": "leaf3",
+        "interface": "eth1",
+        "mac": "aa:c1:ab:7e:80:7b",
+        "peer": "a"
+      }
+    },
+    {
+      "a": {
+        "node": "spine1",
+        "interface": "eth4",
+        "mac": "aa:c1:ab:00:00:9c",
+        "peer": "z"
+      },
+      "z": {
+        "node": "leaf4",
+        "interface": "eth1",
+        "mac": "aa:c1:ab:12:72:c1",
+        "peer": "a"
+      }
+    },
+    {
+      "a": {
+        "node": "spine2",
+        "interface": "eth1",
+        "mac": "aa:c1:ab:13:bc:ad",
+        "peer": "z"
+      },
+      "z": {
+        "node": "leaf1",
+        "interface": "eth2",
+        "mac": "aa:c1:ab:aa:9a:4e",
+        "peer": "a"
+      }
+    },
+    {
+      "a": {
+        "node": "spine2",
+        "interface": "eth2",
+        "mac": "aa:c1:ab:ea:1a:f4",
+        "peer": "z"
+      },
+      "z": {
+        "node": "leaf2",
+        "interface": "eth2",
+        "mac": "aa:c1:ab:c5:4f:4d",
+        "peer": "a"
+      }
+    },
+    {
+      "a": {
+        "node": "spine2",
+        "interface": "eth3",
+        "mac": "aa:c1:ab:d5:58:9e",
+        "peer": "z"
+      },
+      "z": {
+        "node": "leaf3",
+        "interface": "eth2",
+        "mac": "aa:c1:ab:79:2d:18",
+        "peer": "a"
+      }
+    },
+    {
+      "a": {
+        "node": "spine2",
+        "interface": "eth4",
+        "mac": "aa:c1:ab:b6:ab:5d",
+        "peer": "z"
+      },
+      "z": {
+        "node": "leaf4",
+        "interface": "eth2",
+        "mac": "aa:c1:ab:ac:28:62",
+        "peer": "a"
+      }
+    },
+    {
+      "a": {
+        "node": "leaf1",
+        "interface": "eth5",
+        "mac": "aa:c1:ab:da:9f:2e",
+        "peer": "z"
+      },
+      "z": {
+        "node": "web01",
+        "interface": "eth1",
+        "mac": "aa:c1:ab:8e:f6:b6",
+        "peer": "a"
+      }
+    },
+    {
+      "a": {
+        "node": "leaf2",
+        "interface": "eth5",
+        "mac": "aa:c1:ab:3e:0a:23",
+        "peer": "z"
+      },
+      "z": {
+        "node": "db01",
+        "interface": "eth1",
+        "mac": "aa:c1:ab:84:f1:40",
+        "peer": "a"
+      }
+    },
+    {
+      "a": {
+        "node": "leaf4",
+        "interface": "eth5",
+        "mac": "aa:c1:ab:c9:7e:9c",
+        "peer": "z"
+      },
+      "z": {
+        "node": "edge",
+        "interface": "eth1",
+        "mac": "aa:c1:ab:81:47:37",
+        "peer": "a"
+      }
+    }
+  ]
+}

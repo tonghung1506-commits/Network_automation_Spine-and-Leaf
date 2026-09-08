@@ -1,0 +1,26 @@
+!
+hostname {{ inventory_hostname }}
+!
+interface Loopback0
+   ip address 10.255.1.{{ leaf_id }}/32
+!
+{% for s in range(1, spine_count + 1) %}
+interface Ethernet{{ s }}
+   no switchport
+   ip address 10.{{ s }}.{{ leaf_id }}.1/31
+!
+{% endfor %}
+router bgp {{ 65000 + leaf_id }}
+   router-id 10.255.1.{{ leaf_id }}
+   redistribute connected
+{% for s in range(1, spine_count + 1) %}
+   neighbor 10.{{ s }}.{{ leaf_id }}.0 remote-as {{ spine_asn }}
+   neighbor 10.{{ s }}.{{ leaf_id }}.0 send-community
+{% endfor %}
+   !
+   address-family ipv4
+{% for s in range(1, spine_count + 1) %}
+      neighbor 10.{{ s }}.{{ leaf_id }}.0 activate
+{% endfor %}
+!
+end
