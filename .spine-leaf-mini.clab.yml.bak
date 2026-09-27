@@ -1,0 +1,33 @@
+name: spine-leaf-mini
+topology:
+  defaults:
+    kind: arista_ceos
+    image: ceos:4.36.1F
+  nodes:
+    spine1:
+    spine2:
+    leaf1:
+    leaf2:
+    leaf3:
+    leaf4:
+    edge:
+      kind: linux
+      image: ghcr.io/srl-labs/network-multitool
+    web01:
+      kind: linux
+      image: ubuntu:22.04
+    db01:
+      kind: linux
+      image: ubuntu:22.04
+  links:
+    - endpoints: ["spine1:eth1", "leaf1:eth1"]
+    - endpoints: ["spine1:eth2", "leaf2:eth1"]
+    - endpoints: ["spine1:eth3", "leaf3:eth1"]
+    - endpoints: ["spine1:eth4", "leaf4:eth1"]
+    - endpoints: ["spine2:eth1", "leaf1:eth2"]
+    - endpoints: ["spine2:eth2", "leaf2:eth2"]
+    - endpoints: ["spine2:eth3", "leaf3:eth2"]
+    - endpoints: ["spine2:eth4", "leaf4:eth2"]
+    - endpoints: ["leaf1:eth5", "web01:eth1"]
+    - endpoints: ["leaf2:eth5", "db01:eth1"]
+    - endpoints: ["leaf4:eth5", "edge:eth1"]

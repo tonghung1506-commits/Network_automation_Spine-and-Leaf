@@ -1,0 +1,14 @@
+---
+- name: Test ket noi toi toan bo Spine va Leaf
+  hosts: ceos
+  gather_facts: no
+  tasks:
+    - name: Chay show hostname tren thiet bi
+      arista.eos.eos_command:
+        commands:
+          - show hostname
+      register: output
+
+    - name: In ket qua
+      debug:
+        var: output.stdout
