@@ -1,0 +1,284 @@
+---
+# preflight.yml
+# Phien ban Ansible cua preflight-check.sh - chay DAU TIEN moi phien lam viec.
+#
+#   cd ~/network_automation/spine-leaf-mini/ansible
+#   ansible-playbook preflight.yml -K        # -K: hoi mat khau sudo (containerlab can sudo)
+#   ansible-playbook preflight.yml -K --check   # che do xem truoc: chi bao cao, khong sua gi
+#
+# Diem khac bash: moi buoc mo ta TRANG THAI MONG MUON va chi hanh dong khi trang thai
+# thuc te lech di; dau ra cho biet chinh xac buoc nao da phai sua (changed) hay da dung san (ok).
+ 
+# ============================================================================
+# PLAY 1 - Ha tang container: kiem tra, deploy lai neu can, khoi phuc node Linux
+# ============================================================================
+- name: "1/3 Khoi phuc ha tang container (containerlab + node Linux)"
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    prefix: clab-spine-leaf-mini
+    topo_file: spine-leaf-fabric-mini.clab.yml
+    # playbook nam trong thu muc ansible/ nen thu muc lab la cha cua no
+    lab_dir: "{{ playbook_dir | dirname }}"
+    linux_nodes: 3        # web01, db01, edge
+    # So container phai dang chay = so switch trong inventory + 3 node Linux
+    expected_containers: "{{ groups['ceos'] | length + linux_nodes }}"
+    # IP fabric ma setup-linux-nodes.sh gan (cong thuc 172.16.<leaf_id>.10)
+    web_ip: 172.16.1.10
+    db_ip: 172.16.2.10
+ 
+  tasks:
+    - name: Dem container dang o trang thai running
+      ansible.builtin.command: >-
+        docker ps -q --filter name={{ prefix }} --filter status=running
+      register: running
+      changed_when: false
+      check_mode: false          # lenh chi doc -> van chay duoc khi --check
+ 
+    - name: Xac dinh co can deploy lai lab khong
+      ansible.builtin.set_fact:
+        need_deploy: "{{ running.stdout_lines | length < expected_containers | int }}"
+ 
+    - name: Bao cao trang thai container
+      ansible.builtin.debug:
+        msg: >-
+          Dang chay {{ running.stdout_lines | length }}/{{ expected_containers }} container
+          -> {{ 'CAN deploy lai' if need_deploy else 'khong can deploy lai' }}
+ 
+    - name: Xac dinh co bo qua cac buoc kiem tra "song" khong
+      # --check khong bao gio thuc su deploy (dung), nhung neu dang can deploy
+      # that thi moi buoc phia sau phu thuoc ha tang (cho SSH, kiem tra BGP,
+      # MySQL) chac chan that bai vi ha tang chua ton tai - bo qua het cho gon,
+      # thay vi de tung buoc tu cho timeout roi moi bao loi (rat ton thoi gian).
+      ansible.builtin.set_fact:
+        skip_live_checks: "{{ ansible_check_mode and need_deploy | bool }}"
+ 
+    - name: Deploy lai toan bo lab (containerlab --reconfigure)
+      ansible.builtin.command:
+        cmd: containerlab deploy -t {{ topo_file }} --reconfigure
+        chdir: "{{ lab_dir }}"
+      become: true
+      become_method: ansible.builtin.sudo
+      changed_when: true
+      when: need_deploy | bool
+ 
+    # ---- Hien bang trang thai (Name/Kind/State/IPv4/IPv6) nhu khi go tay ----
+    # ansible.builtin.command bat (capture) toan bo output, khong tu in ra
+    # terminal nhu khi go containerlab deploy truc tiep - phai dung debug de
+    # in lai. Dung "inspect" (khong phai output cua deploy) de bang nay luon
+    # hien ra o moi lan chay, ke ca khi khong can deploy lai.
+    - name: Doc bang trang thai lab (containerlab inspect)
+      ansible.builtin.command:
+        cmd: containerlab inspect -t {{ topo_file }}
+        chdir: "{{ lab_dir }}"
+      become: true
+      become_method: ansible.builtin.sudo
+      register: clab_inspect
+      changed_when: false
+      failed_when: false          # chi la buoc xem, khong nen lam dung playbook neu lab chua ton tai
+      check_mode: false
+ 
+    - name: Hien thi bang trang thai lab
+      ansible.builtin.debug:
+        msg: "{{ clab_inspect.stdout_lines }}"
+ 
+    # ---- Kiem tra node Linux con IP fabric khong (mat sau moi lan recreate) ----
+    - name: Doc dia chi IPv4 hien tai cua web01 va db01
+      ansible.builtin.command: docker exec {{ prefix }}-{{ item }} ip -o -4 addr show
+      loop: [web01, db01]
+      register: linux_ips
+      changed_when: false
+      failed_when: false          # container chua chay thi coi nhu "thieu IP", khong dung playbook
+      check_mode: false
+ 
+    - name: Xac dinh co can chay lai setup-linux-nodes.sh khong
+      ansible.builtin.set_fact:
+        need_linux_setup: >-
+          {{ need_deploy | bool
+             or web_ip not in (linux_ips.results[0].stdout | default(''))
+             or db_ip not in (linux_ips.results[1].stdout | default('')) }}
+ 
+    - name: Chay setup-linux-nodes.sh (IP fabric / Apache / MySQL co ban / NAT)
+      ansible.builtin.command: bash {{ lab_dir }}/configs-backup/setup-linux-nodes.sh
+      changed_when: true
+      when: need_linux_setup | bool
+ 
+    # ---- Cho 6 switch mo cong SSH (cEOS boot mat 1-2 phut) ----
+    - name: Cho SSH cua tung switch san sang
+      ansible.builtin.wait_for:
+        host: "{{ hostvars[item].ansible_host | default(item) }}"
+        port: 22
+        timeout: 240
+        sleep: 5
+      loop: "{{ groups['ceos'] }}"
+      check_mode: false
+      when: not skip_live_checks
+ 
+# ============================================================================
+# PLAY 2 - Kiem chung control-plane: BGP phai Established du so neighbor
+# ============================================================================
+- name: "2/3 Xac nhan BGP tren 6 switch (dong thoi kiem chung SSH-key con song)"
+  hosts: ceos
+  gather_facts: false
+  vars:
+    # Spine phai thay du moi Leaf; Leaf phai thay du moi Spine.
+    expected_peers: >-
+      {{ (groups['leaf'] | length) if inventory_hostname in groups['spine']
+         else (groups['spine'] | length) }}
+    # Play nay chay tren nhom "ceos", khac host voi Play 1 ("localhost"), nen
+    # phai lay bien qua hostvars - 2 host khong tu chia se fact cho nhau.
+    skip_live_checks: "{{ hostvars['localhost'].skip_live_checks | default(false) }}"
+ 
+  tasks:
+    - name: Doc tom tat BGP (thu lai toi da 3 phut cho toi khi hoi tu)
+      arista.eos.eos_command:
+        commands: show ip bgp summary
+      register: bgp
+      until: (bgp.stdout[0] | default('') | regex_findall('Estab') | length) == expected_peers | int
+      retries: 12
+      delay: 15
+      check_mode: false
+      when: not skip_live_checks
+ 
+    - name: Khang dinh so phien BGP Established
+      ansible.builtin.assert:
+        that:
+          - (bgp.stdout[0] | regex_findall('Estab') | length) == expected_peers | int
+        success_msg: "{{ inventory_hostname }}: {{ expected_peers }}/{{ expected_peers }} phien BGP Established"
+        fail_msg: "{{ inventory_hostname }}: chua du {{ expected_peers }} phien BGP Established"
+      when: not skip_live_checks
+ 
+# ============================================================================
+# PLAY 3 - Tang ung dung: MySQL tren db01, client tren web01, test xuyen fabric
+# ============================================================================
+- name: "3/3 Chuan bi tang ung dung (MySQL) va test xuyen fabric"
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    prefix: clab-spine-leaf-mini
+    db_ip: 172.16.2.10
+    # Mat khau lab - neu dua len GitHub nen chuyen vao ansible-vault
+    app_user: appuser
+    app_password: "AppPass123!"
+    # Schema TAM de test duong truyen; thay bang schema that cua app khi co
+    seed_sql: |
+      CREATE DATABASE IF NOT EXISTS appdb;
+      USE appdb;
+      CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(50) NOT NULL UNIQUE,
+        email VARCHAR(100)
+      );
+      INSERT IGNORE INTO users (username, email) VALUES
+        ('testuser1', 'test1@example.com'),
+        ('testuser2', 'test2@example.com');
+      CREATE USER IF NOT EXISTS '{{ app_user }}'@'%' IDENTIFIED BY '{{ app_password }}';
+      GRANT ALL PRIVILEGES ON appdb.* TO '{{ app_user }}'@'%';
+      FLUSH PRIVILEGES;
+    # Truy van kiem tra: ket qua 2 nghia la da co ca user '%' lan bang users
+    seed_check_sql: >-
+      SELECT
+      (SELECT COUNT(*) FROM mysql.user WHERE user='{{ app_user }}' AND host='%') +
+      (SELECT COUNT(*) FROM information_schema.tables
+        WHERE table_schema='appdb' AND table_name='users');
+ 
+  tasks:
+    # ---- web01: mysql-client ----
+    - name: Kiem tra web01 da co mysql client chua
+      ansible.builtin.command: docker exec {{ prefix }}-web01 which mysql
+      register: mysql_client
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      when: not skip_live_checks
+ 
+    - name: Cai mysql-client tren web01
+      ansible.builtin.command: docker exec {{ prefix }}-web01 sh -c "apt-get update -qq && apt-get install -y -qq mysql-client"
+      changed_when: true
+      when: not skip_live_checks and mysql_client.rc != 0
+ 
+    # ---- db01: bind-address ----
+    - name: Doc bind-address hien tai cua MySQL tren db01
+      ansible.builtin.command: docker exec {{ prefix }}-db01 grep '^bind-address' /etc/mysql/mysql.conf.d/mysqld.cnf
+      register: bind_cfg
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      when: not skip_live_checks
+ 
+    - name: Doi bind-address thanh 0.0.0.0 (mac dinh 127.0.0.1 chan ket noi tu ngoai)
+      ansible.builtin.command:
+        argv:
+          - docker
+          - exec
+          - "{{ prefix }}-db01"
+          - sed
+          - -i
+          - "s/^bind-address.*/bind-address = 0.0.0.0/"
+          - /etc/mysql/mysql.conf.d/mysqld.cnf
+      changed_when: true
+      when: not skip_live_checks and '0.0.0.0' not in bind_cfg.stdout
+      notify: Restart MySQL tren db01
+ 
+    # Handler chi chay neu buoc sed o tren that su da doi gi do.
+    # flush_handlers ep chay NGAY (truoc buoc seed), khong doi cuoi play.
+    - name: Ap dung restart MySQL (neu co yeu cau) truoc khi seed du lieu
+      ansible.builtin.meta: flush_handlers
+ 
+    # ---- db01: database / bang / quyen ----
+    - name: Kiem tra appdb.users va user appuser@'%' da ton tai chua
+      ansible.builtin.command:
+        argv: [docker, exec, "{{ prefix }}-db01", mysql, -u, root, -N, -B, -e, "{{ seed_check_sql }}"]
+      register: seed_check
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      when: not skip_live_checks
+ 
+    - name: Tao appdb / users / quyen appuser@'%' (neu con thieu)
+      ansible.builtin.command:
+        argv: [docker, exec, "{{ prefix }}-db01", mysql, -u, root, -e, "{{ seed_sql }}"]
+      changed_when: true
+      when: not skip_live_checks and seed_check.stdout | default('') | trim != '2'
+ 
+    # ---- Test cuoi: di qua fabric tu web01 (leaf1) sang db01 (leaf2) ----
+    - name: Truy van MySQL xuyen fabric tu web01 sang db01
+      ansible.builtin.command:
+        argv:
+          - docker
+          - exec
+          - "{{ prefix }}-web01"
+          - mysql
+          - -h
+          - "{{ db_ip }}"
+          - -u
+          - "{{ app_user }}"
+          - "-p{{ app_password }}"
+          - appdb
+          - -e
+          - SELECT * FROM users;
+      register: cross_fabric
+      changed_when: false
+      check_mode: false
+      # Chi that su bo qua khi ha tang chua ton tai (skip_live_checks); neu moi
+      # thu da san sang thi day chi la lenh doc, chay duoi --check van an toan.
+      when: not skip_live_checks
+ 
+    - name: Hien thi ket qua truy van xuyen fabric
+      ansible.builtin.debug:
+        var: cross_fabric.stdout_lines
+      when: not skip_live_checks
+ 
+    - name: Khang dinh truy van tra ve du lieu
+      ansible.builtin.assert:
+        that: cross_fabric.stdout_lines | length > 1     # dong tieu de + it nhat 1 dong du lieu
+        success_msg: "Lab san sang: MySQL xuyen fabric hoat dong."
+        fail_msg: "Truy van xuyen fabric khong tra ve du lieu."
+      when: not skip_live_checks
+ 
+  handlers:
+    - name: Restart MySQL tren db01
+      ansible.builtin.command: docker exec {{ prefix }}-db01 service mysql restart
+      changed_when: true

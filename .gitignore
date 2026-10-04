@@ -1,0 +1,13 @@
+# Containerlab runtime state - tu dong sinh ra moi lan "containerlab deploy",
+# khong phai source code, khong can (va khong nen) luu vao git
+clab-spine-leaf-mini/
+
+# File backup tu dong cua containerlab khi chay --reconfigure
+*.bak
+
+# File retry cua Ansible khi playbook chay fail - chi co tac dung tam thoi
+*.retry
+
+# File chua password Ansible Vault (se dung tu Day 2) - KHONG BAO GIO commit file nay
+.vault_pass
+.vault_pass.txt
