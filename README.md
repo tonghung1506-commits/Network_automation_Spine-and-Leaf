@@ -86,13 +86,14 @@ ansible-playbook preflight.yml -K --check --diff
 
 ## Lưu ý đã biết (sẽ xử lý ở bước hardening tiếp theo)
 
-- Password MySQL (`appuser`) hiện đang ở dạng plaintext trong `preflight.yml` — sẽ chuyển sang Ansible Vault.
-- Việc backup startup-config switch (`configs-backup/*.cfg`) hiện vẫn là bước tay — sẽ tự động hoá vào trong `preflight.yml`.
 - Playbook hiện là flat, chưa tách theo Ansible Roles — sẽ restructure trước khi scale lên bản 20 thiết bị.
 
 ## Lộ trình
 
 - [x] Phase 1: Cấu hình tay, kiểm chứng BGP full-mesh + traffic HTTP/MySQL xuyên fabric
 - [x] Phase 2: Tự động hoá bằng Ansible (SSH-key auth, idempotency, `preflight.yml`)
-- [ ] Hardening: Ansible Vault, backup config tự động, restructure thành Roles
+- [x] Hardening Day 1: Dọn git, thêm `.gitignore` + README
+- [x] Hardening Day 2: Password MySQL chuyển sang Ansible Vault (không còn plaintext trong code)
+- [x] Hardening Day 3: Tự động backup startup-config switch vào `configs-backup/` ngay trong `preflight.yml` (không còn bước `cp` tay)
+- [ ] Hardening Day 4: Restructure `preflight.yml` thành Ansible Roles
 - [ ] Scale lên bản đầy đủ 20 thiết bị (4 Spine / 10 Leaf / 5 Endpoint / 1 Edge)

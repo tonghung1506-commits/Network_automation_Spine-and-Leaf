@@ -115,6 +115,20 @@
       check_mode: false
       when: not skip_live_checks
 
+    # ---- Backup startup-config cua switch ra configs-backup/ (tu dong, khong con phai cp tay) ----
+    # containerlab nap startup-config TU configs-backup/<node>.cfg moi khi deploy, nhung
+    # thay doi tay tren switch (sau "write memory") chi luu vao flash cua container
+    # (clab-spine-leaf-mini/<node>/flash/startup-config) - file nay se mat khi container
+    # bi tao lai (--reconfigure). Copy nguoc lai configs-backup/ moi lan chay preflight
+    # de thay doi khong bi mat, va git luon co ban cau hinh moi nhat.
+    - name: Dong bo startup-config moi nhat cua tung switch vao configs-backup/
+      ansible.builtin.copy:
+        src: "{{ lab_dir }}/{{ prefix }}/{{ item }}/flash/startup-config"
+        dest: "{{ lab_dir }}/configs-backup/{{ item }}.cfg"
+        remote_src: true
+      loop: "{{ groups['ceos'] }}"
+      when: not skip_live_checks
+
 # ============================================================================
 # PLAY 2 - Kiem chung control-plane: BGP phai Established du so neighbor
 # ============================================================================
