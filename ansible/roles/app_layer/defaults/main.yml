@@ -1,0 +1,31 @@
+---
+# Bien rieng cua role app_layer, mang tien to "app_layer_". prefix/db_ip
+# (dung chung voi role khac) nam o group_vars/all.yml, khong khai bao lai.
+app_layer_user: appuser
+# app_layer_password KHONG dat gia tri co san o day - phai den tu vault.yml
+# (vars_files o preflight.yml), de lo ro rang gia tri nay bat buoc phai duoc
+# nap tu ngoai vao, khong danh "sai quen" la co san.
+app_layer_password: "{{ vault_app_password }}"
+
+# Schema TAM de test duong truyen; thay bang schema that cua app khi co
+app_layer_seed_sql: |
+  CREATE DATABASE IF NOT EXISTS appdb;
+  USE appdb;
+  CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(100)
+  );
+  INSERT IGNORE INTO users (username, email) VALUES
+    ('testuser1', 'test1@example.com'),
+    ('testuser2', 'test2@example.com');
+  CREATE USER IF NOT EXISTS '{{ app_layer_user }}'@'%' IDENTIFIED BY '{{ app_layer_password }}';
+  GRANT ALL PRIVILEGES ON appdb.* TO '{{ app_layer_user }}'@'%';
+  FLUSH PRIVILEGES;
+
+# Truy van kiem tra: ket qua 2 nghia la da co ca user '%' lan bang users
+app_layer_seed_check_sql: >-
+  SELECT
+  (SELECT COUNT(*) FROM mysql.user WHERE user='{{ app_layer_user }}' AND host='%') +
+  (SELECT COUNT(*) FROM information_schema.tables
+    WHERE table_schema='appdb' AND table_name='users');

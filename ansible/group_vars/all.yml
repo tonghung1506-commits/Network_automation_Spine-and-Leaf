@@ -1,3 +1,12 @@
-spine_count: 2
-leaf_count: 4
-spine_asn: 65000
+---
+# Bien dung chung cho CA lab (khong rieng cho role nao) - ansible tu dong nap
+# file nay cho moi host trong moi play. Truoc Day 4 cac bien nay nam rai rac
+# trong vars: cua tung play; gom ve day de infra_recovery va app_layer dung
+# chung 1 nguon, khong phai khai bao trung lap o 2 noi (vd prefix, db_ip).
+prefix: clab-spine-leaf-mini
+topo_file: spine-leaf-fabric-mini.clab.yml
+# playbook nam trong thu muc ansible/ nen thu muc lab la cha cua no
+lab_dir: "{{ playbook_dir | dirname }}"
+linux_nodes: 3        # web01, db01, edge
+web_ip: 172.16.1.10
+db_ip: 172.16.2.10

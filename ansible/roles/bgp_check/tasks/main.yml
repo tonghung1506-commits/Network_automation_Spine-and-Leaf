@@ -1,0 +1,23 @@
+---
+# role: bgp_check
+# Xac nhan BGP Established du so neighbor tren tung switch (dong thoi kiem
+# chung SSH-key con song, vi task nay phai SSH that vao duoc moi chay duoc).
+# Noi dung cua Play 2 trong preflight.yml ban flat truoc Day 4.
+
+- name: Doc tom tat BGP (thu lai toi da 3 phut cho toi khi hoi tu)
+  arista.eos.eos_command:
+    commands: show ip bgp summary
+  register: bgp_check_bgp
+  until: (bgp_check_bgp.stdout[0] | default('') | regex_findall('Estab') | length) == bgp_check_expected_peers | int
+  retries: 12
+  delay: 15
+  check_mode: false
+  when: not skip_live_checks
+
+- name: Khang dinh so phien BGP Established
+  ansible.builtin.assert:
+    that:
+      - (bgp_check_bgp.stdout[0] | regex_findall('Estab') | length) == bgp_check_expected_peers | int
+    success_msg: "{{ inventory_hostname }}: {{ bgp_check_expected_peers }}/{{ bgp_check_expected_peers }} phien BGP Established"
+    fail_msg: "{{ inventory_hostname }}: chua du {{ bgp_check_expected_peers }} phien BGP Established"
+  when: not skip_live_checks

@@ -1,0 +1,4 @@
+---
+- name: Restart MySQL tren db01
+  ansible.builtin.command: docker exec {{ prefix }}-db01 service mysql restart
+  changed_when: true

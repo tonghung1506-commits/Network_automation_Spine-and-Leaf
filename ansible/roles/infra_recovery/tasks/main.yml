@@ -1,0 +1,118 @@
+---
+# role: infra_recovery
+# Khoi phuc ha tang container (containerlab + node Linux), cho SSH switch san
+# sang, va dong bo startup-config moi nhat cua switch ve configs-backup/.
+# Day la noi dung cua Play 1 trong preflight.yml ban flat truoc Day 4 - chuyen
+# nguyen logic vao day, chi doi vars o preflight.yml con "goi role".
+#
+# Ghi chu ve ten bien: cac bien register/set_fact rieng cua role nay mang
+# tien to "infra_recovery_" (vd infra_recovery_need_deploy), TRU "skip_live_checks" -
+# bien nay co tinh cach "tin hieu dung chung" duoc ca Play 2 (bgp_check) va
+# Play 3 (app_layer) doc lai qua hostvars, nen co y giu ten ngan gon, khong
+# gan tien to rieng cua role nay.
+
+- name: Dem container dang o trang thai running
+  ansible.builtin.command: >-
+    docker ps -q --filter name={{ prefix }} --filter status=running
+  register: infra_recovery_running
+  changed_when: false
+  check_mode: false          # lenh chi doc -> van chay duoc khi --check
+
+- name: Xac dinh co can deploy lai lab khong
+  ansible.builtin.set_fact:
+    infra_recovery_need_deploy: >-
+      {{ infra_recovery_running.stdout_lines | length < infra_recovery_expected_containers | int }}
+
+- name: Bao cao trang thai container
+  ansible.builtin.debug:
+    msg: >-
+      Dang chay {{ infra_recovery_running.stdout_lines | length }}/{{ infra_recovery_expected_containers }}
+      container -> {{ 'CAN deploy lai' if infra_recovery_need_deploy else 'khong can deploy lai' }}
+
+- name: Xac dinh co bo qua cac buoc kiem tra "song" khong
+  # --check khong bao gio thuc su deploy (dung), nhung neu dang can deploy
+  # that thi moi buoc phia sau phu thuoc ha tang (cho SSH, kiem tra BGP,
+  # MySQL) chac chan that bai vi ha tang chua ton tai - bo qua het cho gon,
+  # thay vi de tung buoc tu cho timeout roi moi bao loi (rat ton thoi gian).
+  # noqa: var-naming[no-role-prefix] - co y KHONG gan tien to "infra_recovery_":
+  # day la tin hieu dung chung, Play 2 (bgp_check) va Play 3 (app_layer) deu
+  # doc lai bien nay (qua hostvars doi voi Play 2), gan tien to se lam 2 noi
+  # do phai doi theo ten rieng cua role nay - trai voi muc dich cua no.
+  ansible.builtin.set_fact:
+    skip_live_checks: "{{ ansible_check_mode and infra_recovery_need_deploy | bool }}"
+
+- name: Deploy lai toan bo lab (containerlab --reconfigure)
+  ansible.builtin.command:
+    cmd: containerlab deploy -t {{ topo_file }} --reconfigure
+    chdir: "{{ lab_dir }}"
+  become: true
+  become_method: ansible.builtin.sudo
+  changed_when: true
+  when: infra_recovery_need_deploy | bool
+
+# ---- Hien bang trang thai (Name/Kind/State/IPv4/IPv6) nhu khi go tay ----
+# ansible.builtin.command bat (capture) toan bo output, khong tu in ra
+# terminal nhu khi go containerlab deploy truc tiep - phai dung debug de
+# in lai. Dung "inspect" (khong phai output cua deploy) de bang nay luon
+# hien ra o moi lan chay, ke ca khi khong can deploy lai.
+- name: Doc bang trang thai lab (containerlab inspect)
+  ansible.builtin.command:
+    cmd: containerlab inspect -t {{ topo_file }}
+    chdir: "{{ lab_dir }}"
+  become: true
+  become_method: ansible.builtin.sudo
+  register: infra_recovery_clab_inspect
+  changed_when: false
+  failed_when: false          # chi la buoc xem, khong nen lam dung playbook neu lab chua ton tai
+  check_mode: false
+
+- name: Hien thi bang trang thai lab
+  ansible.builtin.debug:
+    msg: "{{ infra_recovery_clab_inspect.stdout_lines }}"
+
+# ---- Kiem tra node Linux con IP fabric khong (mat sau moi lan recreate) ----
+- name: Doc dia chi IPv4 hien tai cua web01 va db01
+  ansible.builtin.command: docker exec {{ prefix }}-{{ item }} ip -o -4 addr show
+  loop: [web01, db01]
+  register: infra_recovery_linux_ips
+  changed_when: false
+  failed_when: false          # container chua chay thi coi nhu "thieu IP", khong dung playbook
+  check_mode: false
+
+- name: Xac dinh co can chay lai setup-linux-nodes.sh khong
+  ansible.builtin.set_fact:
+    infra_recovery_need_linux_setup: >-
+      {{ infra_recovery_need_deploy | bool
+         or web_ip not in (infra_recovery_linux_ips.results[0].stdout | default(''))
+         or db_ip not in (infra_recovery_linux_ips.results[1].stdout | default('')) }}
+
+- name: Chay setup-linux-nodes.sh (IP fabric / Apache / MySQL co ban / NAT)
+  ansible.builtin.command: bash {{ lab_dir }}/configs-backup/setup-linux-nodes.sh
+  changed_when: true
+  when: infra_recovery_need_linux_setup | bool
+
+# ---- Cho 6 switch mo cong SSH (cEOS boot mat 1-2 phut) ----
+- name: Cho SSH cua tung switch san sang
+  ansible.builtin.wait_for:
+    host: "{{ hostvars[item].ansible_host | default(item) }}"
+    port: 22
+    timeout: 240
+    sleep: 5
+  loop: "{{ groups['ceos'] }}"
+  check_mode: false
+  when: not skip_live_checks
+
+# ---- Backup startup-config cua switch ra configs-backup/ (tu dong, khong con phai cp tay) ----
+# containerlab nap startup-config TU configs-backup/<node>.cfg moi khi deploy, nhung
+# thay doi tay tren switch (sau "write memory") chi luu vao flash cua container
+# (clab-spine-leaf-mini/<node>/flash/startup-config) - file nay se mat khi container
+# bi tao lai (--reconfigure). Copy nguoc lai configs-backup/ moi lan chay preflight
+# de thay doi khong bi mat, va git luon co ban cau hinh moi nhat.
+- name: Dong bo startup-config moi nhat cua tung switch vao configs-backup/
+  ansible.builtin.copy:
+    src: "{{ lab_dir }}/{{ prefix }}/{{ item }}/flash/startup-config"
+    dest: "{{ lab_dir }}/configs-backup/{{ item }}.cfg"
+    remote_src: true
+    mode: "0644"   # dat quyen ro rang, thay vi de Ansible tu "doan" theo file nguon
+  loop: "{{ groups['ceos'] }}"
+  when: not skip_live_checks

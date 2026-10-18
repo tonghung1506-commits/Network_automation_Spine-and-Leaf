@@ -11,3 +11,4 @@ clab-spine-leaf-mini/
 # File chua password Ansible Vault (se dung tu Day 2) - KHONG BAO GIO commit file nay
 .vault_pass
 .vault_pass.txt
+*.before-day4.bak

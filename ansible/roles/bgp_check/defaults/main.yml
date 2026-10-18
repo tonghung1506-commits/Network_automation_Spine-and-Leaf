@@ -1,0 +1,8 @@
+---
+# Spine phai thay du moi Leaf; Leaf phai thay du moi Spine. Tu tinh duoc tu
+# inventory (groups['spine']/groups['leaf']) nen de la default cua role,
+# khong can playbook truyen vao. Mang tien to "bgp_check_" vi day la bien
+# rieng cua role nay (var-naming no-role-prefix cua ansible-lint).
+bgp_check_expected_peers: >-
+  {{ (groups['leaf'] | length) if inventory_hostname in groups['spine']
+     else (groups['spine'] | length) }}

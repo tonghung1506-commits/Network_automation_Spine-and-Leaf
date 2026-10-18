@@ -1,0 +1,98 @@
+---
+# role: app_layer
+# Chuan bi tang ung dung (MySQL tren db01, client tren web01) va test truy
+# van xuyen fabric tu web01 sang db01. Noi dung cua Play 3 trong preflight.yml
+# ban flat truoc Day 4.
+
+# ---- web01: mysql-client ----
+- name: Kiem tra web01 da co mysql client chua
+  ansible.builtin.command: docker exec {{ prefix }}-web01 which mysql
+  register: app_layer_mysql_client
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: not skip_live_checks
+
+- name: Cai mysql-client tren web01
+  ansible.builtin.command: docker exec {{ prefix }}-web01 sh -c "apt-get update -qq && apt-get install -y -qq mysql-client"
+  changed_when: true
+  when: not skip_live_checks and app_layer_mysql_client.rc != 0
+
+# ---- db01: bind-address ----
+- name: Doc bind-address hien tai cua MySQL tren db01
+  ansible.builtin.command: docker exec {{ prefix }}-db01 grep '^bind-address' /etc/mysql/mysql.conf.d/mysqld.cnf
+  register: app_layer_bind_cfg
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: not skip_live_checks
+
+- name: Doi bind-address thanh 0.0.0.0 (mac dinh 127.0.0.1 chan ket noi tu ngoai)
+  ansible.builtin.command:
+    argv:
+      - docker
+      - exec
+      - "{{ prefix }}-db01"
+      - sed
+      - -i
+      - "s/^bind-address.*/bind-address = 0.0.0.0/"
+      - /etc/mysql/mysql.conf.d/mysqld.cnf
+  changed_when: true
+  when: not skip_live_checks and '0.0.0.0' not in app_layer_bind_cfg.stdout
+  notify: Restart MySQL tren db01
+
+# Handler chi chay neu buoc sed o tren that su da doi gi do.
+# flush_handlers ep chay NGAY (truoc buoc seed), khong doi cuoi play.
+- name: Ap dung restart MySQL (neu co yeu cau) truoc khi seed du lieu
+  ansible.builtin.meta: flush_handlers
+
+# ---- db01: database / bang / quyen ----
+- name: Kiem tra appdb.users va user appuser@'%' da ton tai chua
+  ansible.builtin.command:
+    argv: [docker, exec, "{{ prefix }}-db01", mysql, -u, root, -N, -B, -e, "{{ app_layer_seed_check_sql }}"]
+  register: app_layer_seed_check
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: not skip_live_checks
+
+- name: Tao appdb / users / quyen appuser@'%' (neu con thieu)
+  ansible.builtin.command:
+    argv: [docker, exec, "{{ prefix }}-db01", mysql, -u, root, -e, "{{ app_layer_seed_sql }}"]
+  changed_when: true
+  when: not skip_live_checks and app_layer_seed_check.stdout | default('') | trim != '2'
+
+# ---- Test cuoi: di qua fabric tu web01 (leaf1) sang db01 (leaf2) ----
+- name: Truy van MySQL xuyen fabric tu web01 sang db01
+  ansible.builtin.command:
+    argv:
+      - docker
+      - exec
+      - "{{ prefix }}-web01"
+      - mysql
+      - -h
+      - "{{ db_ip }}"
+      - -u
+      - "{{ app_layer_user }}"
+      - "-p{{ app_layer_password }}"
+      - appdb
+      - -e
+      - SELECT * FROM users;
+  register: app_layer_cross_fabric
+  changed_when: false
+  check_mode: false
+  # Chi that su bo qua khi ha tang chua ton tai (skip_live_checks); neu moi
+  # thu da san sang thi day chi la lenh doc, chay duoi --check van an toan.
+  when: not skip_live_checks
+
+- name: Hien thi ket qua truy van xuyen fabric
+  ansible.builtin.debug:
+    var: app_layer_cross_fabric.stdout_lines
+  when: not skip_live_checks
+
+- name: Khang dinh truy van tra ve du lieu
+  ansible.builtin.assert:
+    that: app_layer_cross_fabric.stdout_lines | length > 1     # dong tieu de + it nhat 1 dong du lieu
+    success_msg: "Lab san sang: MySQL xuyen fabric hoat dong."
+    fail_msg: "Truy van xuyen fabric khong tra ve du lieu."
+  when: not skip_live_checks

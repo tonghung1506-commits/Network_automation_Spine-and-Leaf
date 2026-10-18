@@ -1,0 +1,7 @@
+---
+# Bien THAT SU rieng cua role nay (khong dung o role nao khac) - mang tien to
+# "infra_recovery_" theo dung convention cua ansible-lint (var-naming
+# no-role-prefix), de khong bao gio dung ten voi bien cua role khac.
+# Cac bien dung chung toan lab (prefix, lab_dir, web_ip, db_ip...) nam o
+# group_vars/all.yml, khong khai bao lai o day.
+infra_recovery_expected_containers: "{{ groups['ceos'] | length + linux_nodes }}"

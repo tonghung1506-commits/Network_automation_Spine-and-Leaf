@@ -19,7 +19,7 @@ Lab mô phỏng kiến trúc mạng Spine-Leaf của datacenter hiện đại, c
 ```
 
 - **2 Spine**: `spine1`, `spine2` — full-mesh BGP với tất cả Leaf
-- **4 Leaf**: `leaf1`-`leaf3` thường, `leaf4` đóng vai trò Border Leaf (hối ra `edge`)
+- **4 Leaf**: `leaf1`-`leaf3` thường, `leaf4` đóng vai trò Border Leaf (nối ra `edge`)
 - **1 Edge**: NAT ra Internet
 - **2 Endpoint**: `web01` (Apache), `db01` (MySQL) — mô phỏng traffic ứng dụng thật xuyên qua fabric
 
@@ -46,20 +46,26 @@ Scheme này được thiết kế để scale thẳng lên bản 20 thiết bị
 
 ```
 .
-├── spine-leaf-fabric-mini.clab.yml   # Topology file chinh (containerlab)
-├── ansible/
-│   ├── preflight.yml                 # Entry-point duy nhat - chay dau tien moi phien lam viec
-│   ├── deploy_config.yml             # Day cau hinh BGP qua template Jinja2
-│   ├── test_connectivity.yml
-│   ├── inventory.ini
-│   ├── group_vars/ , host_vars/      # Bien theo group / theo tung thiet bi
-│   └── templates/                    # Jinja2 template cho spine / leaf
-└── configs-backup/
-    ├── *.cfg                         # Startup-config cua 6 switch (auto load lai khi deploy)
-    └── setup-linux-nodes.sh          # Khoi phuc IP/Apache/MySQL cho web01, db01
+|-- spine-leaf-fabric-mini.clab.yml   # Topology file chinh (containerlab)
+|-- ansible/
+|   |-- preflight.yml                 # Entry-point duy nhat - chi con la ban "dieu phoi", goi role
+|   |-- deploy_config.yml             # Day cau hinh BGP qua template Jinja2
+|   |-- test_connectivity.yml
+|   |-- vault.yml                     # Password MySQL, ma hoa bang Ansible Vault
+|   |-- inventory.ini
+|   |-- group_vars/                   # all.yml (bien dung chung ca lab) + bien rieng theo group
+|   |-- host_vars/                    # Bien rieng theo tung thiet bi
+|   |-- roles/                        # Logic chi tiet cua tung buoc preflight (Day 4)
+|   |   |-- infra_recovery/           # Play 1: ha tang container, node Linux, backup config switch
+|   |   |-- bgp_check/                # Play 2: xac nhan BGP Established
+|   |   `-- app_layer/                # Play 3: MySQL + test xuyen fabric
+|   `-- templates/                    # Jinja2 template cho spine / leaf
+`-- configs-backup/
+    |-- *.cfg                         # Startup-config cua 6 switch (auto load lai khi deploy)
+    `-- setup-linux-nodes.sh          # Khoi phuc IP/Apache/MySQL cho web01, db01
 ```
 
-> Ghi chú: `clab-spine-leaf-mini/` là thư mục runtime do Containerlab tự sinh ra mỗi lần `deploy` (log, cert, state...). Thư mục này **không** được commit vào git (xem `.gitignore`) vì nó không phải source code, chỉ là trạng thái chạy — tái tạo lại hoàl hoàn toàn mỗi lần redeploy.
+> Ghi chú: `clab-spine-leaf-mini/` là thư mục runtime do Containerlab tự sinh ra mỗi lần `deploy` (log, cert, state...). Thư mục này **không** được commit vào git (xem `.gitignore`) vì nó không phải source code, chỉ là trạng thái chạy — tái tạo lại hoàn toàn mỗi lần redeploy.
 
 ## Cách chạy
 
@@ -76,17 +82,13 @@ ansible-playbook preflight.yml -K
 1. Kiểm tra số container đang chạy, deploy lại toàn bộ lab nếu cần (`containerlab deploy --reconfigure`)
 2. Hiển thị bảng trạng thái (`containerlab inspect`)
 3. Khôi phục IP/Apache/MySQL cho `web01`, `db01` nếu bị mất (do bị tạo lại từ image gốc mỗi lần redeploy)
-4. Chờ SSH sẵn sC�ng trên các switch, kiểm tra BGP đã `Established` đủ số peer kỳ vọng
+4. Chờ SSH sẵn sàng trên các switch, kiểm tra BGP đã `Established` đủ số peer kỳ vọng
 5. Đảm bảo MySQL trên `db01` đúng cấu hình (`bind-address`, database, quyền `appuser`), test query xuyên fabric từ `web01`
 
 Chạy kiểm tra khô (không thay đổi gì) bằng:
 ```bash
 ansible-playbook preflight.yml -K --check --diff
 ```
-
-## Lưu ý đã biết (sẽ xử lý ở bước hardening tiếp theo)
-
-- Playbook hiện là flat, chưa tách theo Ansible Roles — sẽ restructure trước khi scale lên bản 20 thiết bị.
 
 ## Lộ trình
 
@@ -95,5 +97,5 @@ ansible-playbook preflight.yml -K --check --diff
 - [x] Hardening Day 1: Dọn git, thêm `.gitignore` + README
 - [x] Hardening Day 2: Password MySQL chuyển sang Ansible Vault (không còn plaintext trong code)
 - [x] Hardening Day 3: Tự động backup startup-config switch vào `configs-backup/` ngay trong `preflight.yml` (không còn bước `cp` tay)
-- [ ] Hardening Day 4: Restructure `preflight.yml` thành Ansible Roles
+- [x] Hardening Day 4: Restructure `preflight.yml` thành Ansible Roles (`infra_recovery`, `bgp_check`, `app_layer`), biến dùng chung gom vào `group_vars/all.yml`
 - [ ] Scale lên bản đầy đủ 20 thiết bị (4 Spine / 10 Leaf / 5 Endpoint / 1 Edge)
