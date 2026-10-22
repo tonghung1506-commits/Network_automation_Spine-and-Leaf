@@ -1,0 +1,30 @@
+---
+# render_configs.yml
+# Sinh cau hinh tu template Jinja2 ra file text, KHONG ket noi toi thiet bi nao.
+# Dung de: (1) xem chinh xac cau hinh se duoc day, (2) lay mau do thoi gian
+# go tay, (3) benchmark toc do sinh cau hinh khi so thiet bi tang.
+# Chay (trong thu muc ansible/):  ansible-playbook render_configs.yml
+# Ket qua: ../results/rendered/<ten_thiet_bi>.cfg
+- name: Render cau hinh tu template ra file
+  hosts: ceos
+  gather_facts: false
+  tasks:
+    # Tao thu muc dich tren may dieu khien (localhost), khong phai tren switch.
+    # Chay lap lai an toan (idempotent), nhieu thiet bi cung tao 1 thu muc van khong loi
+    - name: Tao thu muc chua file cau hinh da render
+      ansible.builtin.file:
+        path: "{{ playbook_dir }}/../results/rendered"
+        state: directory
+        mode: "0755"
+      delegate_to: localhost
+      become: false
+
+    # delegate_to localhost: ghi file ngay tren may dieu khien, bien cua tung
+    # thiet bi (leaf_id, spine_id...) van duoc dung de render nhu binh thuong
+    - name: Sinh file cau hinh tu template (spine dung spine.j2, leaf dung leaf.j2)
+      ansible.builtin.template:
+        src: "{{ 'spine.j2' if 'spine' in group_names else 'leaf.j2' }}"
+        dest: "{{ playbook_dir }}/../results/rendered/{{ inventory_hostname }}.cfg"
+        mode: "0644"
+      delegate_to: localhost
+      become: false

@@ -12,3 +12,5 @@ clab-spine-leaf-mini/
 .vault_pass
 .vault_pass.txt
 *.before-day4.bak
+results/rendered/
+results/logs/

@@ -1,0 +1,12 @@
+
+PLAY [Day config cho lop Spine] ************************************************
+skipping: no hosts matched
+
+PLAY [Day config cho lop Leaf] *************************************************
+
+TASK [Sinh va day config tu template leaf.j2] **********************************
+ok: [leaf1]
+
+PLAY RECAP *********************************************************************
+leaf1                      : ok=1    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+

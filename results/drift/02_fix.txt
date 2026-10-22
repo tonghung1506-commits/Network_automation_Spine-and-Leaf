@@ -1,0 +1,21 @@
+
+PLAY [Day config cho lop Spine] ************************************************
+skipping: no hosts matched
+
+PLAY [Day config cho lop Leaf] *************************************************
+
+TASK [Sinh va day config tu template leaf.j2] **********************************
+[WARNING]: To ensure idempotency and correct diff the input configuration lines should be similar to how they appear if present in the running configuration on device including the indentation
+[WARNING]: Task result `warnings` was str instead of list and has been discarded.
+[WARNING]: Value for result key 'warnings' of type str was converted to list.
+Origin: <unknown>
+
+To ensure idempotency and correct diff the input configuration lines should be similar to how they appear if [...]
+
+Values for result key 'warnings' must be of type list.
+
+changed: [leaf1]
+
+PLAY RECAP *********************************************************************
+leaf1                      : ok=1    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
