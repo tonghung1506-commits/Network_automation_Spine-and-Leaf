@@ -1,0 +1,16 @@
+limit,so_thiet_bi,lan,giay,trang_thai
+leaf1,1,1,6.90,OK
+leaf1,1,2,3.50,OK
+leaf1,1,3,3.48,OK
+leaf1+leaf2,2,1,6.12,OK
+leaf1+leaf2,2,2,3.58,OK
+leaf1+leaf2,2,3,3.96,OK
+leaf1+leaf2+spine1,3,1,8.91,OK
+leaf1+leaf2+spine1,3,2,6.43,OK
+leaf1+leaf2+spine1,3,3,6.31,OK
+leaf1+leaf2+leaf3+leaf4,4,1,6.56,OK
+leaf1+leaf2+leaf3+leaf4,4,2,4.33,OK
+leaf1+leaf2+leaf3+leaf4,4,3,4.12,OK
+ceos,6,1,9.33,OK
+ceos,6,2,6.92,OK
+ceos,6,3,6.82,OK
