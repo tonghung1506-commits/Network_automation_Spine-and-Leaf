@@ -1,0 +1,8 @@
+---
+collections:
+  - name: arista.eos
+    version: 12.1.2
+  - name: ansible.netcommon
+    version: 8.6.0
+  - name: ansible.utils
+    version: 6.0.3

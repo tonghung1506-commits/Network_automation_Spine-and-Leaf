@@ -1,7 +1,7 @@
 ---
 - name: Test ket noi toi toan bo Spine va Leaf
   hosts: ceos
-  gather_facts: no
+  gather_facts: false
   tasks:
     - name: Chay show hostname tren thiet bi
       arista.eos.eos_command:

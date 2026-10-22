@@ -1,0 +1,51 @@
+name: CI
+
+# Chay tu dong moi khi push len nhanh main hoac khi mo pull request.
+# Muc dich: bat loi cau hinh/playbook ngay tren GitHub, khong can bat lab len.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  kiem-tra:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        # Moi lenh ben duoi chay trong thu muc ansible/ cua repo
+        working-directory: ansible
+    steps:
+      - name: Lay ma nguon
+        uses: actions/checkout@v6
+
+      - name: Cai Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Cai Ansible va ansible-lint
+        run: |
+          python -m pip install --upgrade pip
+          pip install "ansible-core==2.21.2" "ansible-lint==26.9.0"
+
+      - name: Cai collection (arista.eos va phu thuoc)
+        run: ansible-galaxy collection install -r requirements.yml
+
+      # CI khong co (va khong nen co) mat khau Vault that. ansible.cfg doi file
+      # mat khau ton tai, nen tao file gia; vault.yml that bi thay bang ban gia
+      # CHI tren may chay CI nay, khong bao gio duoc commit nguoc lai.
+      - name: Chuan bi Vault gia cho CI
+        run: |
+          echo "ci-dummy" > ~/.ansible_vault_pass.txt
+          printf -- '---\nvault_app_password: ci-dummy\n' > vault.yml
+
+      - name: Kiem tra chat luong (ansible-lint)
+        run: ansible-lint
+
+      - name: Kiem tra cu phap playbook
+        run: ansible-playbook --syntax-check preflight.yml deploy_config.yml render_configs.yml test_connectivity.yml
+
+      # Buoc quan trong nhat: sinh cau hinh cho TAT CA thiet bi tu template.
+      # Thieu bien (vd spine_count) se bao loi o day, truoc khi cham toi switch that.
+      - name: Render cau hinh cho toan bo thiet bi
+        run: ansible-playbook render_configs.yml

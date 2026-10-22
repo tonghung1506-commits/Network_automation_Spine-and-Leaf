@@ -1,7 +1,7 @@
 ---
 - name: Day config cho lop Spine
   hosts: spine
-  gather_facts: no
+  gather_facts: false
   tasks:
     - name: Sinh va day config tu template spine.j2
       arista.eos.eos_config:
@@ -9,7 +9,7 @@
 
 - name: Day config cho lop Leaf
   hosts: leaf
-  gather_facts: no
+  gather_facts: false
   tasks:
     - name: Sinh va day config tu template leaf.j2
       arista.eos.eos_config:
