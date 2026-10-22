@@ -10,5 +10,5 @@
       register: output
 
     - name: In ket qua
-      debug:
+      ansible.builtin.debug:
         var: output.stdout
