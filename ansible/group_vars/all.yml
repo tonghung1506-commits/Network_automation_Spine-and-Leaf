@@ -13,6 +13,5 @@ db_ip: 172.16.2.10
 
 # Bien mo hinh fabric (dung boi templates/spine.j2 va leaf.j2 qua deploy_config.yml)
 # Khoi phuc tu commit 350b8da - bi mat do script Day 4 ghi de nham
-spine_count: 2
 leaf_count: 4
 spine_asn: 65000
